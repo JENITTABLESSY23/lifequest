@@ -1,4 +1,9 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Normalize API base URL: strip trailing slash, ensure path ends with /api.
+// This handles both VITE_API_URL=https://backend.com and VITE_API_URL=https://backend.com/api
+const _rawApiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+export const API_BASE_URL = _rawApiUrl
+  ? (_rawApiUrl.endsWith('/api') ? _rawApiUrl : `${_rawApiUrl}/api`)
+  : '/api';
 
 export const getAuthHeaders = (token) => ({
   'Content-Type': 'application/json',
