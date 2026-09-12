@@ -9,6 +9,10 @@ export const connectDB = async () => {
     console.log(`[Database] MongoDB Connected: ${conn.connection.host}`);
     return true;
   } catch (error) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error(`[Database Error] Primary MongoDB Atlas connection failed in production: ${error.message}`);
+      return false;
+    }
     console.warn(`[Database Warning] Primary MongoDB connection failed (${error.message}). Attempting In-Memory MongoDB fallback...`);
     try {
       const { MongoMemoryServer } = await import('mongodb-memory-server');
