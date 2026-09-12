@@ -5,6 +5,7 @@ import { connectDB } from './config/db.js';
 import apiRoutes from './routes/api.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
+import { seedRewardItems } from './utils/seedRewards.js';
 
 dotenv.config();
 
@@ -22,8 +23,17 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB, then idempotently seed canonical reward items
+connectDB().then(async (connected) => {
+  if (connected) {
+    try {
+      const seeded = await seedRewardItems();
+      console.log(`[LifeQuest Server] Reward shop seeded: ${seeded.length} items ready`);
+    } catch (seedErr) {
+      console.warn(`[LifeQuest Server] Reward seed warning: ${seedErr.message}`);
+    }
+  }
+});
 
 // API Routes
 app.use('/api', apiRoutes);
