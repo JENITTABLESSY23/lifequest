@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Swords, Plus, Shield, Filter, Zap, Coins,
-  TrendingUp, Flame,
+  TrendingUp, Flame, Scroll, Target, CheckCircle2,
+  Brain, Dumbbell, Heart, Palette,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { questService } from '../services/questService';
@@ -261,53 +262,125 @@ export default function Quests() {
             </div>
           </div>
         )}
-        <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-10 space-y-6 sm:space-y-8 z-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight flex items-center gap-2.5 sm:gap-3">
-                <Swords className="w-7 h-7 sm:w-8 sm:h-8 text-amber-400" /> Quest Log
-              </h1>
-              <p className="text-slate-400 text-xs sm:text-sm mt-1">Manage your real-life daily objectives and earn XP, Gold, and Attributes</p>
+        <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 z-10">
+          {/* RPG QUEST BOARD HERO HEADER */}
+          <header className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-800/90 bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-purple-950/20 p-5 sm:p-7 md:p-8 shadow-2xl backdrop-blur-xl">
+            {/* Ambient glows */}
+            <div className="absolute -top-16 -right-16 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-purple-600/15 blur-[100px] rounded-full pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              {/* Title & Lore Subtitle */}
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold uppercase tracking-widest">
+                  <Swords className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+                  <span>Realm Mission Terminal</span>
+                </div>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-200 tracking-tight font-sans">
+                  QUEST BOARD
+                </h1>
+                <p className="text-sm sm:text-base text-amber-200/90 italic font-medium">
+                  &ldquo;Choose your next challenge.&rdquo;
+                </p>
+              </div>
+
+              {/* Action Button */}
+              <div className="shrink-0">
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 min-h-[44px] text-sm tracking-wider uppercase focus-visible:ring-2 focus-visible:ring-amber-300 active:scale-[0.98]"
+                >
+                  <Plus className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
+                  <span>CREATE QUEST</span>
+                </button>
+              </div>
             </div>
-            <button
-              onClick={openCreateModal}
-              className="w-full sm:w-auto px-5 sm:px-6 py-3 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-extrabold rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 min-h-[44px] text-sm"
-            >
-              <Plus className="w-5 h-5" /> CREATE QUEST
-            </button>
-          </div>
+
+            {/* Live Quest Statistics Panels */}
+            <div className="relative z-10 grid grid-cols-3 gap-2.5 sm:gap-4 mt-6 pt-6 border-t border-slate-800/80">
+              <div className="p-3 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800/90 flex flex-col justify-between">
+                <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Scroll className="w-3.5 h-3.5 text-purple-400 shrink-0" aria-hidden="true" />
+                  <span>Total Quests</span>
+                </span>
+                <span className="text-xl sm:text-2xl md:text-3xl font-black text-white font-mono mt-1">
+                  {quests.length}
+                </span>
+              </div>
+
+              <div className="p-3 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800/90 flex flex-col justify-between">
+                <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-amber-400 shrink-0" aria-hidden="true" />
+                  <span>Available</span>
+                </span>
+                <span className="text-xl sm:text-2xl md:text-3xl font-black text-amber-400 font-mono mt-1">
+                  {quests.filter((q) => !q.completed).length}
+                </span>
+              </div>
+
+              <div className="p-3 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800/90 flex flex-col justify-between">
+                <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" aria-hidden="true" />
+                  <span>Completed</span>
+                </span>
+                <span className="text-xl sm:text-2xl md:text-3xl font-black text-emerald-400 font-mono mt-1">
+                  {quests.filter((q) => q.completed).length}
+                </span>
+              </div>
+            </div>
+          </header>
+
+          {/* RPG Filter Bar */}
           <div
             className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800/80 text-sm font-semibold text-slate-400 no-scrollbar"
             role="tablist"
             aria-label="Filter quests by status or category"
           >
-            <span className="text-xs text-slate-500 uppercase tracking-widest flex items-center gap-1 mr-2 shrink-0"><Filter className="w-3.5 h-3.5" /> Filter:</span>
+            <span className="text-xs text-slate-500 uppercase tracking-widest flex items-center gap-1 mr-2 shrink-0">
+              <Filter className="w-3.5 h-3.5 text-amber-400/80" aria-hidden="true" /> Filter:
+            </span>
             {[
-              { id: 'ALL', label: 'All Quests' },
-              { id: 'ACTIVE', label: 'Active' },
-              { id: 'COMPLETED', label: 'Completed' },
-              { id: 'INTELLECT', label: 'Intellect' },
-              { id: 'STRENGTH', label: 'Strength' },
-              { id: 'VITALITY', label: 'Vitality' },
-              { id: 'CREATIVITY', label: 'Creativity' },
-              { id: 'DISCIPLINE', label: 'Discipline' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={filter === tab.id}
-                onClick={() => setFilter(tab.id)}
-                className={`px-3.5 py-1.5 rounded-xl whitespace-nowrap transition min-h-[44px] flex items-center ${
-                  filter === tab.id
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-bold'
-                    : 'hover:bg-slate-900 hover:text-slate-200'
-                }`}
-
-              >
-                {tab.label}
-              </button>
-            ))}
+              { id: 'ALL', label: 'All Quests', count: quests.length },
+              { id: 'ACTIVE', label: 'Available', count: quests.filter((q) => !q.completed).length },
+              { id: 'COMPLETED', label: 'Completed', count: quests.filter((q) => q.completed).length },
+              { id: 'INTELLECT', label: 'Intellect', icon: Brain },
+              { id: 'STRENGTH', label: 'Strength', icon: Dumbbell },
+              { id: 'VITALITY', label: 'Vitality', icon: Heart },
+              { id: 'CREATIVITY', label: 'Creativity', icon: Palette },
+              { id: 'DISCIPLINE', label: 'Discipline', icon: Target },
+            ].map((tab) => {
+              const TabIcon = tab.icon;
+              const isSelected = filter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSelected}
+                  onClick={() => setFilter(tab.id)}
+                  className={`px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all min-h-[44px] flex items-center gap-1.5 text-xs sm:text-sm font-bold border focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                    isSelected
+                      ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30'
+                      : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200 hover:border-slate-700'
+                  }`}
+                >
+                  {TabIcon && <TabIcon className="w-3.5 h-3.5" aria-hidden="true" />}
+                  <span>{tab.label}</span>
+                  {tab.count !== undefined && (
+                    <span
+                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                        isSelected ? 'bg-indigo-700/80 text-white' : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
+
           {error && (
             <div className="p-4 bg-rose-950/40 border border-rose-800 rounded-xl text-rose-300 text-sm flex items-center gap-2">
               <Flame className="w-5 h-5" />
@@ -315,6 +388,7 @@ export default function Quests() {
               <button onClick={fetchQuests} className="ml-auto px-3 py-1 bg-rose-800 hover:bg-rose-700 text-white rounded">Try Again</button>
             </div>
           )}
+
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <SkeletonQuestCard />
@@ -322,18 +396,45 @@ export default function Quests() {
               <SkeletonQuestCard />
             </div>
           ) : filteredQuests.length === 0 ? (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center py-20 border border-dashed border-slate-800 rounded-3xl bg-slate-900/30 text-center px-6 space-y-4">
-              <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-500"><Swords className="w-10 h-10 text-amber-400/60" /></div>
-              <div className="space-y-1 max-w-sm">
-                <h3 className="text-lg font-bold text-white">No Quests Found</h3>
-                <p className="text-sm text-slate-400">{filter === 'ALL' ? 'Your adventure starts with your first quest.' : `No quests match the "${filter}" filter.`}</p>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-16 sm:py-20 border border-dashed border-slate-800 rounded-3xl bg-slate-900/30 text-center px-6 space-y-4"
+            >
+              <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 shadow-inner">
+                <Swords className="w-10 h-10 text-amber-400/70" aria-hidden="true" />
               </div>
-              <button onClick={openCreateModal} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition flex items-center gap-2"><Plus className="w-4 h-4" /> CREATE QUEST</button>
+              <div className="space-y-1.5 max-w-sm">
+                <h3 className="text-lg font-bold text-white tracking-tight">No Quests On The Board</h3>
+                <p className="text-xs sm:text-sm text-slate-400">
+                  {filter === 'ALL'
+                    ? 'The realm awaits your initiative. Inscribe your first quest to start earning XP and Gold.'
+                    : `No quests match the "${filter}" filter.`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={openCreateModal}
+                className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm tracking-wider uppercase transition shadow-md shadow-amber-500/20 flex items-center gap-2 min-h-[44px]"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" aria-hidden="true" />
+                <span>INSCRIBE FIRST QUEST</span>
+              </button>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"><AnimatePresence>{filteredQuests.map((quest) => (
-              <QuestCard key={quest.id} quest={quest} onComplete={handleCompleteQuest} onEdit={openEditModal} onDelete={handleDeleteQuest} />
-            ))}</AnimatePresence></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatePresence>
+                {filteredQuests.map((quest) => (
+                  <QuestCard
+                    key={quest.id}
+                    quest={quest}
+                    onComplete={handleCompleteQuest}
+                    onEdit={openEditModal}
+                    onDelete={handleDeleteQuest}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
           )}
         </main>
         <QuestFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={editingQuest ? handleUpdateQuest : handleCreateQuest} initialQuest={editingQuest} />
