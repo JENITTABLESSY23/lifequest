@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Swords, Plus, Shield, Filter, Zap, Coins,
   TrendingUp, Flame, Scroll, Target, CheckCircle2,
   Brain, Dumbbell, Heart, Palette, Sparkles,
   Search, X, ArrowUpDown, RotateCcw, SearchX,
-  Trophy, Check, Loader2, Calendar, ArrowRight, Info,
+  Trophy, Check, Loader2, Calendar, ArrowRight, Info, Compass,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { questService } from '../services/questService';
@@ -58,6 +58,7 @@ function getProgressionStats(totalXP) {
 export default function Quests() {
   const { user, token, updateUser } = useAuth();
   const toast = useToast();
+  const shouldReduceMotion = useReducedMotion();
 
   const [quests, setQuests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -392,6 +393,78 @@ export default function Quests() {
     }
   };
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PHASE 7: QUEST JOURNEY PROGRESSION & MOTIVATION DERIVED STATE
+  //
+  // Always calculates across the FULL quest board (unaffected by active filters)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const journeyStats = useMemo(() => {
+    const total = quests.length;
+    const completed = quests.filter((q) => q.completed).length;
+    const remaining = total - completed;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    // Deterministic momentum message
+    let momentum = 'Your adventure is waiting to begin.';
+    if (total === 0) {
+      momentum = 'Your adventure is waiting to begin.';
+    } else if (percentage === 100) {
+      momentum = 'Quest board mastered.';
+    } else if (percentage >= 75) {
+      momentum = 'The final challenges are within reach.';
+    } else if (percentage >= 50) {
+      momentum = "You're past the halfway mark.";
+    } else if (percentage >= 25) {
+      momentum = "You're gaining momentum.";
+    } else if (percentage > 0) {
+      momentum = 'Your journey has begun.';
+    }
+
+    // Next milestone marker (25%, 50%, 75%, 100%)
+    let nextMilestone = 25;
+    if (percentage >= 100) {
+      nextMilestone = 100;
+    } else if (percentage >= 75) {
+      nextMilestone = 100;
+    } else if (percentage >= 50) {
+      nextMilestone = 75;
+    } else if (percentage >= 25) {
+      nextMilestone = 50;
+    } else {
+      nextMilestone = 25;
+    }
+
+    // Category breakdown across all 5 canonical attributes
+    const categories = ['INTELLECT', 'STRENGTH', 'VITALITY', 'CREATIVITY', 'DISCIPLINE'].map((catKey) => {
+      const catQuests = quests.filter((q) => q.category === catKey);
+      const catTotal = catQuests.length;
+      const catCompleted = catQuests.filter((q) => q.completed).length;
+      const catPct = catTotal > 0 ? Math.round((catCompleted / catTotal) * 100) : 0;
+      const attrKey = catKey.toLowerCase();
+      const attrScore = user?.attributes?.[attrKey] || 1;
+      const rank = Math.floor(attrScore / 10) + 1;
+
+      return {
+        id: catKey,
+        total: catTotal,
+        completed: catCompleted,
+        percentage: catPct,
+        attributeScore: attrScore,
+        rank,
+      };
+    });
+
+    return {
+      total,
+      completed,
+      remaining,
+      percentage,
+      momentum,
+      nextMilestone,
+      categories,
+    };
+  }, [quests, user?.attributes]);
+
   const progressStats = user ? getProgressionStats(user.xp ?? 0) : null;
 
   return (
@@ -532,7 +605,256 @@ export default function Quests() {
             </div>
           </header>
 
-          {/* 2. FEATURED CHALLENGE SECTION */}
+          {/* 2. QUEST JOURNEY PROGRESSION & MOTIVATION SECTION */}
+          <section
+            aria-label="Quest Journey Progression"
+            className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-800/90 bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-indigo-950/25 p-5 sm:p-7 md:p-8 shadow-2xl backdrop-blur-xl space-y-6"
+          >
+            {/* Ambient Background Glows */}
+            <div className="absolute -top-16 -right-16 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
+
+            {/* Top Row: Section Title, Subtitle, and Momentum Pill */}
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono font-bold uppercase tracking-widest">
+                  <Compass className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
+                  <span>Hero's Odyssey</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-indigo-200 tracking-tight font-sans">
+                  ⚔ MY QUEST JOURNEY
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400 font-medium">
+                  Every challenge completed moves your character closer to mastery.
+                </p>
+              </div>
+
+              {/* Momentum Indicator Pill */}
+              <div className="shrink-0 flex items-center gap-3">
+                <div
+                  className="px-4 py-2.5 rounded-xl bg-slate-950/70 border border-indigo-500/30 flex items-center gap-2.5 shadow-md"
+                  aria-label={`Current momentum: ${journeyStats.momentum}`}
+                >
+                  <Flame className="w-4 h-4 text-amber-400 fill-amber-400/20 shrink-0" aria-hidden="true" />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                      MOMENTUM
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-amber-300">
+                      {journeyStats.momentum}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Overall Board Progress Tracker */}
+            <div className="relative z-10 p-4 sm:p-5 rounded-2xl bg-slate-950/60 border border-slate-800/90 space-y-3.5 shadow-inner">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
+                  <span className="font-mono font-bold text-slate-200">
+                    <span className="text-amber-300 font-black text-base">{journeyStats.completed}</span>
+                    <span className="text-slate-500 mx-1">/</span>
+                    <span className="text-white font-black text-base">{journeyStats.total}</span>
+                    <span className="ml-2 text-slate-400 text-xs uppercase tracking-wider">QUESTS CONQUERED</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 font-mono">
+                  <span className="text-emerald-400 font-black text-base">
+                    {journeyStats.percentage}%
+                  </span>
+                  <span className="text-slate-400 text-xs uppercase tracking-wider">
+                    BOARD COMPLETION
+                  </span>
+                </div>
+              </div>
+
+              {/* Animated RPG Progress Bar */}
+              <div
+                role="progressbar"
+                aria-valuenow={journeyStats.percentage}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Quest board completion progress"
+                className="w-full h-3 sm:h-3.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800"
+              >
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-emerald-400 shadow-sm shadow-amber-500/30"
+                  initial={shouldReduceMotion ? false : { width: 0 }}
+                  animate={{ width: `${journeyStats.percentage}%` }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.8, ease: 'easeOut' }}
+                />
+              </div>
+
+              {/* Milestone Indicators */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
+                  <span>
+                    {journeyStats.percentage >= 100
+                      ? '🏆 Board Mastered! All milestones achieved.'
+                      : `Next Milestone: ${journeyStats.nextMilestone}% Board Completion`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] font-mono text-slate-500">
+                  {[25, 50, 75, 100].map((tier) => (
+                    <span
+                      key={tier}
+                      className={`flex items-center gap-1 ${
+                        journeyStats.percentage >= tier
+                          ? 'text-emerald-400 font-bold'
+                          : journeyStats.nextMilestone === tier
+                          ? 'text-amber-400 font-bold'
+                          : 'text-slate-600'
+                      }`}
+                    >
+                      {journeyStats.percentage >= tier && <Check className="w-3 h-3 text-emerald-400" aria-hidden="true" />}
+                      {tier}%
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* All-Quests-Conquered Celebratory Badge (when board is 100% complete) */}
+            {journeyStats.total > 0 && journeyStats.percentage === 100 && (
+              <div className="relative z-10 p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                    <Trophy className="w-5 h-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-emerald-200 uppercase tracking-wide">
+                      🏆 Quest Board Mastered!
+                    </h3>
+                    <p className="text-xs text-emerald-400/90">
+                      All inscribed quests conquered. Forge new challenges to continue your progression.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition min-h-[44px] flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-emerald-400"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" aria-hidden="true" />
+                  <span>Forge New Quest</span>
+                </button>
+              </div>
+            )}
+
+            {/* Zero Quests Helper Callout */}
+            {journeyStats.total === 0 && (
+              <div className="relative z-10 p-4 rounded-xl bg-amber-950/30 border border-amber-500/30 flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                    <Swords className="w-5 h-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-amber-200 uppercase tracking-wide">
+                      Adventure Log Empty
+                    </h3>
+                    <p className="text-xs text-amber-300/80">
+                      Forge your first challenge to start building momentum across all character attributes.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider transition min-h-[44px] flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-amber-400"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" aria-hidden="true" />
+                  <span>Create Quest</span>
+                </button>
+              </div>
+            )}
+
+            {/* Category Journey Contribution Grid */}
+            <div className="relative z-10 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4 text-indigo-400" aria-hidden="true" />
+                  <h3 className="text-xs sm:text-sm font-black text-slate-200 uppercase tracking-wider font-mono">
+                    Attribute Journey & Category Contribution
+                  </h3>
+                </div>
+                <span className="text-[11px] text-slate-500 font-mono hidden sm:inline">
+                  Click category to filter board
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {journeyStats.categories.map((cat) => {
+                  const shortcut = ATTRIBUTE_SHORTCUTS.find((s) => s.id === cat.id);
+                  const isSelected = selectedCategory === cat.id;
+
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => handleAttributeShortcut(cat.id)}
+                      aria-pressed={isSelected}
+                      aria-label={`${cat.id} journey: ${cat.completed} of ${cat.total} quests completed, attribute score ${cat.attributeScore}`}
+                      className={`text-left p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-3 min-h-[44px] group focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+                        isSelected
+                          ? 'bg-slate-900 border-indigo-500 ring-2 ring-indigo-500/30 shadow-lg shadow-indigo-950/40'
+                          : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/60'
+                      }`}
+                    >
+                      {/* Category Header */}
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg leading-none" aria-hidden="true">{shortcut?.glyph}</span>
+                          <span className={`text-xs font-black tracking-wide font-mono ${shortcut?.color || 'text-slate-300'}`}>
+                            {cat.id}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">
+                          Rank {cat.rank}
+                        </span>
+                      </div>
+
+                      {/* Attribute Score and Quests Info */}
+                      <div className="space-y-1.5 w-full">
+                        <div className="flex items-center justify-between text-[11px] font-mono">
+                          <span className="text-slate-400">Score</span>
+                          <span className="text-white font-bold">{cat.attributeScore} pts</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] font-mono">
+                          <span className="text-slate-400">Quests</span>
+                          <span className="text-slate-200 font-semibold">
+                            {cat.completed} / {cat.total}
+                          </span>
+                        </div>
+
+                        {/* Category Progress Bar */}
+                        <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800/60 mt-1">
+                          <div
+                            className="h-full rounded-full bg-indigo-500 transition-all duration-500"
+                            style={{ width: `${cat.percentage}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Footer: Filter toggle cue */}
+                      <div className="flex items-center justify-between w-full pt-1 border-t border-slate-800/60 text-[10px] font-mono">
+                        <span className={isSelected ? 'text-indigo-400 font-bold' : 'text-slate-500 group-hover:text-slate-400'}>
+                          {isSelected ? '✓ Filtered' : `${cat.percentage}% Done`}
+                        </span>
+                        <span className="text-slate-600 group-hover:text-slate-400 transition-colors">
+                          Filter →
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          {/* 3. FEATURED CHALLENGE SECTION */}
           {totalQuestsCount === 0 ? (
             /* Zero Quests in Database */
             <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-dashed border-amber-500/40 bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-purple-950/20 p-6 sm:p-8 text-center space-y-4 shadow-xl">
