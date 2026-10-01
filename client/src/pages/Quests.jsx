@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { questService } from '../services/questService';
 import QuestCard from '../components/QuestCard';
 import QuestFormModal from '../components/QuestFormModal';
+import QuestCompletionModal from '../components/QuestCompletionModal';
 import LevelUpModal from '../components/LevelUpModal';
 import StreakMilestoneModal from '../components/StreakMilestoneModal';
 import AchievementUnlockModal from '../components/AchievementUnlockModal';
@@ -183,11 +184,23 @@ export default function Quests() {
           streakIncreased: streakInfo.increased,
         });
 
-        const queue = [];
-        if (progression.levelUp) queue.push({ type: 'LEVEL_UP', data: progression });
+        // Enqueue sequential celebrations without overlapping modals
+        const queue = [
+          {
+            type: 'QUEST_COMPLETE',
+            data: {
+              quest: data.quest,
+              progression,
+              streak: streakInfo,
+              milestone,
+              unlockedAchievements,
+            },
+          },
+        ];
         if (milestone.unlocked) queue.push({ type: 'MILESTONE', data: milestone });
+        if (progression.levelUp) queue.push({ type: 'LEVEL_UP', data: progression });
         if (unlockedAchievements.length > 0) queue.push({ type: 'ACHIEVEMENTS', data: unlockedAchievements });
-        if (queue.length > 0) processNextCelebration(queue);
+        processNextCelebration(queue);
       }
     } catch (err) {
       toast.error('Unable to complete quest', err.message || 'Please try again.');
@@ -777,6 +790,9 @@ export default function Quests() {
           )}
         </main>
         <QuestFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={editingQuest ? handleUpdateQuest : handleCreateQuest} initialQuest={editingQuest} />
+        {activeCelebration?.type === 'QUEST_COMPLETE' && (
+          <QuestCompletionModal isOpen={true} onClose={closeActiveCelebration} data={activeCelebration.data} />
+        )}
         {activeCelebration?.type === 'LEVEL_UP' && (
           <LevelUpModal isOpen={true} onClose={closeActiveCelebration} progression={activeCelebration.data} />
         )}
