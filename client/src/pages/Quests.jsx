@@ -111,10 +111,12 @@ export default function Quests() {
       const data = await questService.createQuest(questData, token);
       if (data.quest) {
         setQuests((prev) => [data.quest, ...prev]);
-        toast.success('Quest Created', `"${data.quest.title}" added to your log.`);
+        toast.success('⚔ QUEST FORGED!', `"${data.quest.title}" added to your log.`);
+        return data.quest;
       }
     } catch (err) {
       toast.error('Failed to create quest', err.message);
+      throw err;
     }
   };
 
@@ -125,9 +127,11 @@ export default function Quests() {
       if (data.quest) {
         setQuests((prev) => prev.map((q) => (q.id === data.quest.id ? data.quest : q)));
         toast.info('Quest Updated', `Changes saved to "${data.quest.title}".`);
+        return data.quest;
       }
     } catch (err) {
       toast.error('Failed to update quest', err.message);
+      throw err;
     }
   };
 
