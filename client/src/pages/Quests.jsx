@@ -5,10 +5,11 @@ import {
   TrendingUp, Flame, Scroll, Target, CheckCircle2,
   Brain, Dumbbell, Heart, Palette, Sparkles,
   Search, X, ArrowUpDown, RotateCcw, SearchX,
+  Trophy, Check, Loader2, Calendar, ArrowRight, Info,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { questService } from '../services/questService';
-import QuestCard from '../components/QuestCard';
+import QuestCard, { CATEGORY_CONFIG, DIFFICULTY_CONFIG } from '../components/QuestCard';
 import QuestFormModal from '../components/QuestFormModal';
 import QuestCompletionModal from '../components/QuestCompletionModal';
 import LevelUpModal from '../components/LevelUpModal';
@@ -27,6 +28,15 @@ const DIFFICULTY_WEIGHT = {
   HARD: 3,
   EPIC: 4,
 };
+
+// Quick attribute navigation shortcut items
+const ATTRIBUTE_SHORTCUTS = [
+  { id: 'INTELLECT', label: 'INTELLECT', glyph: '🧠', tag: 'INT', color: 'text-sky-300', activeStyle: 'border-sky-400 bg-sky-950/80 ring-2 ring-sky-500/40 shadow-sky-950/60 text-sky-200' },
+  { id: 'STRENGTH', label: 'STRENGTH', glyph: '💪', tag: 'STR', color: 'text-rose-300', activeStyle: 'border-rose-400 bg-rose-950/80 ring-2 ring-rose-500/40 shadow-rose-950/60 text-rose-200' },
+  { id: 'VITALITY', label: 'VITALITY', glyph: '❤️', tag: 'VIT', color: 'text-emerald-300', activeStyle: 'border-emerald-400 bg-emerald-950/80 ring-2 ring-emerald-500/40 shadow-emerald-950/60 text-emerald-200' },
+  { id: 'CREATIVITY', label: 'CREATIVITY', glyph: '🎨', tag: 'CRE', color: 'text-purple-300', activeStyle: 'border-purple-400 bg-purple-950/80 ring-2 ring-purple-500/40 shadow-purple-950/60 text-purple-200' },
+  { id: 'DISCIPLINE', label: 'DISCIPLINE', glyph: '🔥', tag: 'DIS', color: 'text-amber-300', activeStyle: 'border-amber-400 bg-amber-950/80 ring-2 ring-amber-500/40 shadow-amber-950/60 text-amber-200' },
+];
 
 // Client-side progression stats helper (mirrors server logic)
 function getProgressionStats(totalXP) {
@@ -318,6 +328,70 @@ export default function Quests() {
     return result;
   }, [quests, searchQuery, selectedStatus, selectedCategory, selectedDifficulty, sortBy]);
 
+  // Live dataset counts
+  const totalQuestsCount = quests.length;
+  const availableQuestsCount = quests.filter((q) => !q.completed).length;
+  const completedQuestsCount = quests.filter((q) => q.completed).length;
+  const allQuestsCompleted = totalQuestsCount > 0 && availableQuestsCount === 0;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FEATURED QUEST SELECTION (Deterministic RPG Prioritization Rule)
+  //
+  // Selection Algorithm:
+  // 1. Source pool:
+  //    - If user has active search/filters, pick from `filteredQuests` to ensure
+  //      relevance to current view.
+  //    - If no filters are active, pick from the full `quests` array.
+  // 2. Filter candidate pool to incomplete quests (`!q.completed`).
+  // 3. Prioritization Hierarchy:
+  //    a) Highest Difficulty Weight (EPIC: 4 > HARD: 3 > MEDIUM: 2 > EASY: 1)
+  //    b) If tied: Highest XP Reward (`xpReward` descending)
+  //    c) If tied: Highest Gold Reward (`goldReward` descending)
+  //    d) If tied: Newest Creation Date (`createdAt` descending)
+  //    e) If tied: Deterministic string comparison on `id`
+  // 4. If all candidates are completed or pool is empty, returns null.
+  // ─────────────────────────────────────────────────────────────────────────────
+  const featuredQuest = useMemo(() => {
+    const candidatePool = hasActiveFilters ? filteredQuests : quests;
+    const incompleteCandidates = candidatePool.filter((q) => !q.completed);
+
+    if (incompleteCandidates.length === 0) return null;
+
+    return [...incompleteCandidates].sort((a, b) => {
+      // 1. Highest difficulty weight
+      const diffWeightA = DIFFICULTY_WEIGHT[a.difficulty] || 2;
+      const diffWeightB = DIFFICULTY_WEIGHT[b.difficulty] || 2;
+      if (diffWeightB !== diffWeightA) return diffWeightB - diffWeightA;
+
+      // 2. Highest XP reward
+      const xpA = Number(a.xpReward) || 0;
+      const xpB = Number(b.xpReward) || 0;
+      if (xpB !== xpA) return xpB - xpA;
+
+      // 3. Highest Gold reward
+      const goldA = Number(a.goldReward) || 0;
+      const goldB = Number(b.goldReward) || 0;
+      if (goldB !== goldA) return goldB - goldA;
+
+      // 4. Newest creation date
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+
+      // 5. Deterministic tie-break on id
+      return (b.id || '').localeCompare(a.id || '');
+    })[0];
+  }, [quests, filteredQuests, hasActiveFilters]);
+
+  // Quick attribute shortcut click handler (smoothly activates Phase 3 category filter)
+  const handleAttributeShortcut = (catId) => {
+    setSelectedCategory((prev) => (prev === catId ? 'ALL' : catId));
+    const discoveryEl = document.getElementById('quest-discovery-section');
+    if (discoveryEl) {
+      discoveryEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const progressStats = user ? getProgressionStats(user.xp ?? 0) : null;
 
   return (
@@ -378,9 +452,9 @@ export default function Quests() {
           </div>
         )}
         <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 z-10">
-          {/* RPG QUEST BOARD HERO HEADER */}
+          {/* 1. RPG QUEST BOARD HERO HEADER */}
           <header className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-800/90 bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-purple-950/20 p-5 sm:p-7 md:p-8 shadow-2xl backdrop-blur-xl">
-            {/* Ambient glows */}
+            {/* Ambient background glows */}
             <div className="absolute -top-16 -right-16 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
             <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-purple-600/15 blur-[100px] rounded-full pointer-events-none" />
 
@@ -392,10 +466,10 @@ export default function Quests() {
                   <span>Realm Mission Terminal</span>
                 </div>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-200 tracking-tight font-sans">
-                  QUEST BOARD
+                  ⚔ TODAY'S ADVENTURES
                 </h1>
                 <p className="text-sm sm:text-base text-amber-200/90 italic font-medium">
-                  &ldquo;Choose your next challenge.&rdquo;
+                  &ldquo;Choose your next challenge and grow your character.&rdquo;
                 </p>
               </div>
 
@@ -413,24 +487,14 @@ export default function Quests() {
             </div>
 
             {/* Live Quest Statistics Panels */}
-            <div className="relative z-10 grid grid-cols-3 gap-2.5 sm:gap-4 mt-6 pt-6 border-t border-slate-800/80">
-              <div className="p-3 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800/90 flex flex-col justify-between">
-                <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <Scroll className="w-3.5 h-3.5 text-purple-400 shrink-0" aria-hidden="true" />
-                  <span>Total Quests</span>
-                </span>
-                <span className="text-xl sm:text-2xl md:text-3xl font-black text-white font-mono mt-1">
-                  {quests.length}
-                </span>
-              </div>
-
+            <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 mt-6 pt-6 border-t border-slate-800/80">
               <div className="p-3 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800/90 flex flex-col justify-between">
                 <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <Target className="w-3.5 h-3.5 text-amber-400 shrink-0" aria-hidden="true" />
                   <span>Available</span>
                 </span>
                 <span className="text-xl sm:text-2xl md:text-3xl font-black text-amber-400 font-mono mt-1">
-                  {quests.filter((q) => !q.completed).length}
+                  {availableQuestsCount}
                 </span>
               </div>
 
@@ -440,14 +504,262 @@ export default function Quests() {
                   <span>Completed</span>
                 </span>
                 <span className="text-xl sm:text-2xl md:text-3xl font-black text-emerald-400 font-mono mt-1">
-                  {quests.filter((q) => q.completed).length}
+                  {completedQuestsCount}
                 </span>
               </div>
+
+              <div className="p-3 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800/90 flex flex-col justify-between">
+                <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Scroll className="w-3.5 h-3.5 text-purple-400 shrink-0" aria-hidden="true" />
+                  <span>Total Quests</span>
+                </span>
+                <span className="text-xl sm:text-2xl md:text-3xl font-black text-white font-mono mt-1">
+                  {totalQuestsCount}
+                </span>
+              </div>
+
+              {hasActiveFilters && (
+                <div className="p-3 sm:p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/40 flex flex-col justify-between col-span-2 sm:col-span-3 lg:col-span-1">
+                  <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                    <Filter className="w-3.5 h-3.5 text-indigo-400 shrink-0" aria-hidden="true" />
+                    <span>Filtered Matches</span>
+                  </span>
+                  <span className="text-xl sm:text-2xl md:text-3xl font-black text-indigo-200 font-mono mt-1">
+                    {filteredQuests.length}
+                  </span>
+                </div>
+              )}
             </div>
           </header>
 
-          {/* RPG QUEST DISCOVERY & COMMAND BAR */}
+          {/* 2. FEATURED CHALLENGE SECTION */}
+          {totalQuestsCount === 0 ? (
+            /* Zero Quests in Database */
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-dashed border-amber-500/40 bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-purple-950/20 p-6 sm:p-8 text-center space-y-4 shadow-xl">
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <Swords className="w-8 h-8" aria-hidden="true" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  ⚔ THE QUEST BOARD AWAITS
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400">
+                  No quests have been forged yet. Inscribe your first real-life challenge to begin your character journey and earn rewards.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={openCreateModal}
+                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm tracking-wider uppercase shadow-lg shadow-amber-500/20 transition inline-flex items-center gap-2 min-h-[44px]"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" aria-hidden="true" />
+                <span>FORGE YOUR FIRST QUEST</span>
+              </button>
+            </div>
+          ) : allQuestsCompleted ? (
+            /* All Quests Completed */
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-500/40 bg-gradient-to-br from-slate-900/95 via-emerald-950/20 to-slate-900/95 p-6 sm:p-8 text-center space-y-4 shadow-xl">
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <Trophy className="w-8 h-8" aria-hidden="true" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  🏆 ALL CHALLENGES COMPLETE
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400">
+                  Your current quest board has been conquered. Every challenge inscribed has been mastered.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedStatus('COMPLETED')}
+                  className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold rounded-xl text-xs sm:text-sm uppercase tracking-wider transition min-h-[44px]"
+                >
+                  VIEW COMPLETED QUESTS
+                </button>
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm uppercase tracking-wider shadow-md shadow-amber-500/20 transition inline-flex items-center gap-2 min-h-[44px]"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" aria-hidden="true" />
+                  <span>CREATE NEW QUEST</span>
+                </button>
+              </div>
+            </div>
+          ) : featuredQuest ? (
+            /* Active Featured Challenge Card */
+            <section
+              aria-label="Featured challenge"
+              className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-amber-500/50 bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-purple-950/30 p-5 sm:p-7 shadow-2xl backdrop-blur-xl group"
+            >
+              {/* Subtle top edge glow */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-purple-500 to-amber-500" />
+              <div className="absolute -top-16 -right-16 w-56 h-56 bg-amber-500/10 blur-[80px] rounded-full pointer-events-none" />
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-black uppercase tracking-widest shadow-sm">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" aria-hidden="true" />
+                    <span>⚡ FEATURED CHALLENGE</span>
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-mono hidden sm:inline">
+                    Priority Recommendation
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Category Badge */}
+                  {(() => {
+                    const catInfo = CATEGORY_CONFIG[featuredQuest.category] || CATEGORY_CONFIG.INTELLECT;
+                    const CatIcon = catInfo.icon;
+                    return (
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold ${catInfo.color}`}>
+                        <CatIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span>{catInfo.label}</span>
+                        <span className="text-[10px] opacity-80">{catInfo.attributeTag}</span>
+                      </span>
+                    );
+                  })()}
+
+                  {/* Difficulty Badge */}
+                  {(() => {
+                    const diffInfo = DIFFICULTY_CONFIG[featuredQuest.difficulty] || DIFFICULTY_CONFIG.MEDIUM;
+                    return (
+                      <span className={`px-2.5 py-1 rounded-lg border text-xs font-black uppercase tracking-wider ${diffInfo.badge}`}>
+                        <span>{diffInfo.label}</span>
+                        <span className="ml-1 text-amber-400">{diffInfo.stars}</span>
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Title & Description */}
+              <div className="space-y-2 mb-6">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">
+                  {featuredQuest.title}
+                </h3>
+                {featuredQuest.description ? (
+                  <p className="text-sm sm:text-base text-slate-300 line-clamp-2 max-w-3xl leading-relaxed">
+                    {featuredQuest.description}
+                  </p>
+                ) : (
+                  <p className="text-xs sm:text-sm text-slate-500 italic">
+                    No description provided for this quest.
+                  </p>
+                )}
+              </div>
+
+              {/* Footer Bar: Rewards Strip + CTA */}
+              <div className="pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/70 border border-purple-500/40 text-purple-200 text-xs sm:text-sm font-mono font-black">
+                    <Zap className="w-4 h-4 text-purple-400" aria-hidden="true" />
+                    <span>+{featuredQuest.xpReward} XP</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-950/70 border border-amber-500/40 text-amber-200 text-xs sm:text-sm font-mono font-black">
+                    <Coins className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                    <span>+{featuredQuest.goldReward} GOLD</span>
+                  </div>
+                  {featuredQuest.dueDate && (
+                    <div className="flex items-center gap-1 text-xs text-slate-400 font-mono">
+                      <Calendar className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
+                      <span>Target: {new Date(featuredQuest.dueDate).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Primary Action Button */}
+                <button
+                  type="button"
+                  onClick={() => handleCompleteQuest(featuredQuest.id)}
+                  disabled={processingQuestIds.has(featuredQuest.id)}
+                  aria-label={`Begin and complete featured quest: ${featuredQuest.title}`}
+                  className="px-6 py-3 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black rounded-xl text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-amber-500/25 transition flex items-center justify-center gap-2 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-amber-300 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {processingQuestIds.has(featuredQuest.id) ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-950" aria-hidden="true" />
+                      <span>COMPLETING...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Swords className="w-4 h-4 stroke-[2.5]" aria-hidden="true" />
+                      <span>⚔ BEGIN QUEST</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </section>
+          ) : (
+            /* Active filters hide incomplete quests */
+            <div className="p-4 sm:p-5 rounded-2xl border border-slate-800 bg-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm">
+              <div className="flex items-center gap-2.5 text-slate-400">
+                <Info className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
+                <span>No active challenges match your current discovery filters.</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs uppercase tracking-wider transition min-h-[44px]"
+              >
+                RESET FILTERS
+              </button>
+            </div>
+          )}
+
+          {/* 3. QUICK ATTRIBUTE SHORTCUTS */}
+          <section aria-label="Quick attribute navigation" className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+                QUICK ATTRIBUTE FOCUS
+              </span>
+              {selectedCategory !== 'ALL' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory('ALL')}
+                  className="text-[11px] font-mono font-bold text-amber-400 hover:text-amber-300 transition"
+                >
+                  RESET FOCUS (ALL)
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {ATTRIBUTE_SHORTCUTS.map((attr) => {
+                const isSelected = selectedCategory === attr.id;
+                return (
+                  <button
+                    key={attr.id}
+                    type="button"
+                    onClick={() => handleAttributeShortcut(attr.id)}
+                    aria-pressed={isSelected}
+                    aria-label={`Filter by ${attr.label} attribute`}
+                    className={`min-h-[48px] p-2.5 rounded-xl border transition flex items-center justify-between gap-2 text-left focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+                      isSelected
+                        ? attr.activeStyle
+                        : 'border-slate-800/90 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-900/80 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-lg leading-none shrink-0">{attr.glyph}</span>
+                      <span className="text-xs font-bold tracking-wide truncate">{attr.label}</span>
+                    </div>
+                    <span className={`text-[10px] font-mono shrink-0 ${isSelected ? 'text-amber-300 font-black' : 'text-slate-500'}`}>
+                      +{attr.tag}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* 4. RPG QUEST DISCOVERY & COMMAND BAR */}
           <section
+            id="quest-discovery-section"
             aria-label="Quest discovery and filtering controls"
             className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-4 sm:p-5 backdrop-blur-md shadow-xl space-y-4"
           >

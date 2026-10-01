@@ -5,7 +5,7 @@ import {
   Brain, Dumbbell, Heart, Palette, Target, Loader2,
 } from 'lucide-react';
 
-const CATEGORY_CONFIG = {
+export const CATEGORY_CONFIG = {
   INTELLECT: {
     color: 'text-sky-300 bg-sky-950/70 border-sky-500/40 shadow-sky-950/40',
     icon: Brain,
@@ -38,7 +38,7 @@ const CATEGORY_CONFIG = {
   },
 };
 
-const DIFFICULTY_CONFIG = {
+export const DIFFICULTY_CONFIG = {
   EASY: {
     label: 'EASY',
     stars: '★',
