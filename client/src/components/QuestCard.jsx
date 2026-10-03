@@ -203,7 +203,7 @@ export default function QuestCard({ quest, onComplete, onEdit, onDelete }) {
           {/* Quest Marker / Tag */}
           <div className="flex items-center gap-1.5 text-[11px] font-mono tracking-widest uppercase mb-1.5 text-slate-500">
             <Swords className="w-3 h-3 text-amber-500/70" />
-            <span>QUEST OBJECTIVE</span>
+            <span>{quest.completed ? 'CONQUERED ADVENTURE' : 'ACTIVE ADVENTURE'}</span>
           </div>
 
           {/* Quest Title */}
@@ -269,7 +269,7 @@ export default function QuestCard({ quest, onComplete, onEdit, onDelete }) {
               aria-label="Quest completed"
             >
               <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" aria-hidden="true" />
-              <span>QUEST COMPLETE</span>
+              <span>✓ ADVENTURE CONQUERED</span>
             </motion.div>
           ) : (
             <motion.button
@@ -284,12 +284,12 @@ export default function QuestCard({ quest, onComplete, onEdit, onDelete }) {
               {completing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-slate-950" aria-hidden="true" />
-                  <span>COMPLETING...</span>
+                  <span>CONQUERING...</span>
                 </>
               ) : (
                 <>
                   <Swords className="w-4 h-4 text-slate-950 stroke-[2.5]" aria-hidden="true" />
-                  <span>COMPLETE QUEST</span>
+                  <span>⚔ CONQUER ADVENTURE</span>
                 </>
               )}
             </motion.button>
