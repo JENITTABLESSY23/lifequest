@@ -111,7 +111,7 @@ export default function RewardCard({
             aria-label={`Purchase ${item.name} for ${item.price} gold`}
             className="w-full min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-sm transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-amber-300"
           >
-            <Coins className="w-4 h-4" /> BUY — {item.price} GOLD
+            <Coins className="w-4 h-4" /> ACQUIRE — {item.price} GOLD
           </button>
         ) : (
           <button

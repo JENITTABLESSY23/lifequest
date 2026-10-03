@@ -10,6 +10,8 @@ import PageTransition from '../components/PageTransition';
 import { SkeletonRewardCard } from '../components/skeletons/SkeletonCard';
 import { useToast } from '../context/ToastContext';
 import Navbar from '../components/Navbar';
+import GameHUD from '../components/GameHUD';
+import GameWorldBackground from '../components/GameWorldBackground';
 
 export default function Rewards() {
   const { user, token, updateUser } = useAuth();
@@ -99,46 +101,51 @@ export default function Rewards() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative overflow-hidden">
-        {/* Background ambient glow */}
-        <div className="absolute top-0 right-1/4 w-[700px] h-[350px] bg-amber-500/10 blur-[150px] rounded-full pointer-events-none" />
+      <div className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col relative overflow-hidden select-none">
+        {/* 1. Global Atmospheric World Background */}
+        <GameWorldBackground />
 
-        {/* ── Top Navbar ───────────────────────────────────────── */}
+        {/* 2. Top Realm Navbar & Global Game HUD */}
         <Navbar activePage="rewards" />
+        <GameHUD />
 
         {/* ── Main Container ───────────────────────────────────── */}
-        <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-10 space-y-6 sm:space-y-8 z-10">
+        <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 z-10">
           {/* Header Banner */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="game-panel p-6 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight flex items-center gap-2.5 sm:gap-3">
-                <ShoppingBag className="w-7 h-7 sm:w-8 sm:h-8 text-amber-400" /> Reward Shop
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold uppercase tracking-widest mb-2">
+                <ShoppingBag className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+                <span>The Realm Emporium</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white font-cinzel tracking-wider flex items-center gap-2.5 sm:gap-3">
+                TREASURE VAULT & SHOP
               </h1>
-              <p className="text-slate-400 text-sm mt-1">
-                Spend your hard-earned Gold to customize your character and LifeQuest experience
+              <p className="text-slate-400 text-xs sm:text-sm mt-1">
+                Spend your hard-earned Gold to acquire legendary gear, themes, and customizations.
               </p>
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-800 p-1 rounded-xl text-sm font-bold">
+            <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-800 p-1.5 rounded-xl text-xs sm:text-sm font-bold shrink-0">
               <button
                 onClick={() => setActiveTab('SHOP')}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition ${
+                className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition min-h-[44px] uppercase tracking-wider font-mono ${
                   activeTab === 'SHOP'
-                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <ShoppingBag className="w-4 h-4" /> Shop ({rewards.length})
+                <ShoppingBag className="w-4 h-4" /> Shop Vault ({rewards.length})
               </button>
               <button
                 onClick={() => setActiveTab('INVENTORY')}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition ${
+                className={`px-3.5 py-2 rounded-lg flex items-center gap-2 transition min-h-[44px] uppercase tracking-wider font-mono ${
                   activeTab === 'INVENTORY'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                    ? 'bg-indigo-600 text-white font-black shadow-md shadow-indigo-600/20'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Package className="w-4 h-4" /> My Inventory ({inventory.length})
+                <Package className="w-4 h-4" /> Hero Inventory ({inventory.length})
               </button>
             </div>
           </div>

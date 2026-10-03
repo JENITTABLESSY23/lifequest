@@ -20,6 +20,8 @@ import FloatingFeedback from '../components/FloatingFeedback';
 import { SkeletonQuestCard } from '../components/skeletons/SkeletonCard';
 import { useToast } from '../context/ToastContext';
 import Navbar from '../components/Navbar';
+import GameHUD from '../components/GameHUD';
+import GameWorldBackground from '../components/GameWorldBackground';
 
 // Difficulty weight for deterministic sorting: EASY < MEDIUM < HARD < EPIC
 const DIFFICULTY_WEIGHT = {
@@ -469,61 +471,17 @@ export default function Quests() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative overflow-hidden">
-        <div className="absolute top-0 left-1/3 w-[700px] h-[350px] bg-purple-600/10 blur-[140px] rounded-full pointer-events-none" />
+      <div className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col relative overflow-hidden select-none">
+        {/* 1. Global Atmospheric World Background */}
+        <GameWorldBackground />
+
         {floatingFeedback && (
           <FloatingFeedback data={floatingFeedback} onComplete={() => setFloatingFeedback(null)} />
         )}
-        <Navbar activePage="quests" />
-        {progressStats && (
-          <div className="w-full bg-slate-900/70 border-b border-slate-800/80 px-4 sm:px-6 py-3 z-10">
-            <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 sm:gap-4 md:gap-6">
-              {/* Level & XP bar */}
-              <div className="flex items-center gap-3 flex-1 min-w-[240px] max-w-full">
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="p-1.5 bg-amber-500/20 border border-amber-500/40 rounded-lg">
-                    <Shield className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <span className="text-xs font-black uppercase tracking-widest text-amber-400">LVL {progressStats.level}</span>
-                </div>
-                <div className="flex-1 min-w-[120px]">
-                  <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono font-bold mb-1">
-                    <span className="text-purple-400 flex items-center gap-1 truncate">
-                      <Zap className="w-3 h-3 shrink-0" /> {progressStats.currentLevelXP} / {progressStats.xpRequired} XP
-                    </span>
-                    <span className="text-slate-500 ml-1">{progressStats.progressPct}%</span>
-                  </div>
-                  <div className="h-2 bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow={progressStats.progressPct} aria-valuemin="0" aria-valuemax="100">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progressStats.progressPct}%` }}
-                      transition={{ duration: 0.6, ease: 'easeOut' }}
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {/* Stats badges */}
-              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-950/60 border border-slate-800 rounded-xl">
-                  <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                  <span className="text-xs sm:text-sm font-black text-yellow-300 font-mono">{user?.gold ?? 0}</span>
-                  <span className="text-[10px] sm:text-xs text-slate-500 font-semibold">GOLD</span>
-                </div>
-                <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-xl">
-                  <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
-                  <span className="text-xs sm:text-sm font-black text-amber-300 font-mono">{user?.streak ?? 0}</span>
-                  <span className="text-[10px] sm:text-xs text-amber-400/80 font-bold uppercase">STREAK</span>
-                </div>
-                <div className="hidden lg:flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-purple-400" />
-                  <span className="text-xs font-semibold text-slate-400 font-mono">{user?.xp ?? 0} XP</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* 2. Realm Navigation & Global Game HUD */}
+        <Navbar activePage="quests" />
+        <GameHUD />
         <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 z-10">
           {/* 1. RPG QUEST BOARD HERO HEADER */}
           <header className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-800/90 bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-purple-950/20 p-5 sm:p-7 md:p-8 shadow-2xl backdrop-blur-xl">
@@ -538,7 +496,7 @@ export default function Quests() {
                   <Swords className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
                   <span>Realm Mission Terminal</span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-200 tracking-tight font-sans">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-amber-200 tracking-tight font-cinzel">
                   ⚔ TODAY'S ADVENTURES
                 </h1>
                 <p className="text-sm sm:text-base text-amber-200/90 italic font-medium">
@@ -554,7 +512,7 @@ export default function Quests() {
                   className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 min-h-[44px] text-sm tracking-wider uppercase focus-visible:ring-2 focus-visible:ring-amber-300 active:scale-[0.98]"
                 >
                   <Plus className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
-                  <span>CREATE QUEST</span>
+                  <span>FORGE QUEST</span>
                 </button>
               </div>
             </div>
@@ -621,7 +579,7 @@ export default function Quests() {
                   <Compass className="w-3.5 h-3.5 text-indigo-400" aria-hidden="true" />
                   <span>Hero's Odyssey</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-indigo-200 tracking-tight font-sans">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-indigo-200 tracking-tight font-cinzel">
                   ⚔ MY QUEST JOURNEY
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-400 font-medium">

@@ -5,6 +5,8 @@ import { getProfile } from '../services/profileService';
 import AchievementGrid from '../components/AchievementGrid';
 import PageTransition from '../components/PageTransition';
 import Navbar from '../components/Navbar';
+import GameHUD from '../components/GameHUD';
+import GameWorldBackground from '../components/GameWorldBackground';
 import { SkeletonStatCard } from '../components/skeletons/SkeletonCard';
 import {
   Shield,
@@ -154,18 +156,18 @@ export default function Profile() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative overflow-hidden">
-        {/* Background ambient lighting */}
-        <div className="absolute top-0 left-1/4 w-[600px] h-[350px] bg-purple-600/10 blur-[150px] rounded-full pointer-events-none" />
-        <div className="absolute top-1/3 right-1/4 w-[500px] h-[300px] bg-amber-500/10 blur-[140px] rounded-full pointer-events-none" />
+      <div className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col relative overflow-hidden select-none">
+        {/* 1. Global Atmospheric World Background */}
+        <GameWorldBackground />
 
-        {/* Top Navbar */}
+        {/* 2. Top Realm Navbar & Global Game HUD */}
         <Navbar activePage="profile" />
+        <GameHUD />
 
         {/* Main Container */}
-        <main id="main-content" className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 md:p-10 space-y-6 sm:space-y-8 z-10">
+        <main id="main-content" className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 z-10">
           {/* ── Character Header (RPG Screen) ──────────────────────── */}
-          <div className="relative bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 backdrop-blur-md shadow-2xl overflow-hidden">
+          <div className="game-panel p-4 sm:p-6 md:p-8">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-4 sm:gap-6 relative z-10">
               {/* Avatar Frame */}
               <div className="relative shrink-0">
@@ -200,7 +202,7 @@ export default function Profile() {
               <div className="flex-1 text-center md:text-left space-y-3 min-w-0 w-full">
                 <div>
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-wide break-words">{name}</h1>
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-wide break-words font-cinzel">{name}</h1>
                     <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold">
                       {avatar?.name || 'Novice Adventurer'}
                     </span>
